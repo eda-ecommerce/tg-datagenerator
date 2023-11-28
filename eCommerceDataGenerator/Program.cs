@@ -22,6 +22,18 @@ bool KAFKA_DELETE_TOPIC_FIRST = configuration.GetValue<bool>("Kafka:DeleteTopicF
 int AMOUNT_OF_USERS_TO_GENERATE = configuration.GetValue<int>("Kafka:AmountOfUsersToGenerate")!;
 
 
+// Generate mock order
+var mockOrder = new Faker<Order>()
+    .RuleFor(o => o.OrderId, new Guid())
+    .RuleFor(o => o.CreateDate, (f, o) => f.Date.BetweenDateOnly(
+                    new DateOnly(2000, 1, 1),
+                    new DateOnly(2022, 12, 1)))
+    .RuleFor(o => o.Status, (f, u) => f.IndexFaker == 0 ? true : false)
+    .RuleFor(u => u.PaymentDate, (f, o) => f.Date.BetweenDateOnly(
+                    new DateOnly(2003, 1, 1),
+                    new DateOnly(2023, 1, 3)));
+
+
 // Generate mock users
 var mockUsers = new Faker<User>()
     .RuleFor(u => u.Firstname, (f, u) => f.Name.FirstName())
@@ -29,6 +41,7 @@ var mockUsers = new Faker<User>()
     .RuleFor(u => u.Username, (f, u) => u.Firstname + u.Lastname);
 
 var mockGeneratedUsers = mockUsers.Generate(AMOUNT_OF_USERS_TO_GENERATE);
+var mockGeneratedOrders = mockOrder.Generate(AMOUNT_OF_USERS_TO_GENERATE);
 
 if (KAFKA_DELETE_TOPIC_FIRST)
 {
@@ -42,13 +55,14 @@ if (KAFKA_DELETE_TOPIC_FIRST)
     await adminClient.DeleteTopicsAsync(new string[] { KAFKA_TOPIC }, null);
 }
 
-// Produce messages
+// Produce messages config
 ProducerConfig configProducer = new ProducerConfig
 {
     BootstrapServers = KAFKA_BROKER,
     ClientId = Dns.GetHostName()
 };
 
+// Produce user
 using var producer = new ProducerBuilder<Null, string>(configProducer).Build();
 foreach (var user in mockGeneratedUsers)
 {
@@ -57,5 +71,17 @@ foreach (var user in mockGeneratedUsers)
         Value = JsonSerializer.Serialize<User>(user)
     });
     Console.WriteLine(JsonSerializer.Serialize<User>(user));
+
+}
+
+// Produce Order
+using var producer1 = new ProducerBuilder<Null, string>(configProducer).Build();
+foreach (var order in mockGeneratedOrders)
+{
+    var result = await producer1.ProduceAsync(KAFKA_TOPIC, new Message<Null, string>
+    {
+        Value = JsonSerializer.Serialize<Order>(order)
+    });
+    Console.WriteLine(JsonSerializer.Serialize<Order>(order));
 
 }

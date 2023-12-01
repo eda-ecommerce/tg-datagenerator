@@ -8,27 +8,10 @@ namespace eCommerceDataGenerator.Models;
 
 public class Order
 {
-
-
-    /// <summary>
-    /// Durch [JsonIgnore] würde der Value nicht an Kafka gesendet werden
-    /// </summary>
-    //[JsonIgnore]
     public Guid OrderId { get; set; }
-    
-    /// <summary>
-    /// Durch [JsonIgnore] würde der Value nicht an Kafka gesendet werden
-    /// </summary>
-    //[JsonIgnore]
-    public DateOnly CreateDate { get; set; }
-
-    /// <summary>
-    /// Bsp: DieterMücke
-    /// </summary>
-    public Boolean Status{ get; set; }
-
-    /// <summary>
-    /// Bsp: DieterMücke
-    /// </summary>
-    public DateOnly PaymentDate {  get; set; }
+    public Guid CustomerId { get; set; }
+    public DateOnly OrderDate { get; set; }
+    public bool Status { get; set; }
+    public List<OfferingWithQuantity> Items { get; set; }
+    public float TotalPrice {  get; set; }
 }

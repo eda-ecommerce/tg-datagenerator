@@ -17,7 +17,8 @@ IConfigurationRoot configuration = new ConfigurationBuilder()
 
 // Get appsettings and set as variable
 string KAFKA_BROKER = configuration.GetValue<string>("Kafka:Broker")!;
-string KAFKA_TOPIC = configuration.GetValue<string>("Kafka:Topic")!;
+string KAFKA_TOPIC1 = configuration.GetValue<string>("Kafka:Topic1")!;
+string KAFKA_TOPIC2 = configuration.GetValue<string>("Kafka:Topic2")!;
 bool KAFKA_DELETE_TOPIC_FIRST = configuration.GetValue<bool>("Kafka:DeleteTopicFirst")!;
 int AMOUNT_OF_USERS_TO_GENERATE = configuration.GetValue<int>("Kafka:AmountOfUsersToGenerate")!;
 bool createOrderOrShoppingBasket = configuration.GetValue<bool>("CreateOrderOrShoppingBasket")!;
@@ -40,33 +41,28 @@ var mockOfferingsWithQuantity = new Faker<OfferingWithQuantity>()
 var mockShoppingBasket = new Faker<ShoppingBasket>()
     .RuleFor(s => s.ShoppingBasketId, f => Guid.NewGuid())
     .RuleFor(s => s.CustomerId, f => Guid.NewGuid())
-    .RuleFor(s => s.items, f => mockOfferingsWithQuantity.Generate(f.Random.Int(2,7)).ToList());
+    .RuleFor(s => s.Items, f => mockOfferingsWithQuantity.Generate(f.Random.Int(2,7)).ToList());
 
 // Generate mock order
 var mockOrder = new Faker<Order>()
     .RuleFor(o => o.OrderId, f => Guid.NewGuid())
-    .RuleFor(o => o.CreateDate, (f, o) => f.Date.BetweenDateOnly(
-                    new DateOnly(2000, 1, 1),
-                    new DateOnly(2022, 12, 1)))
+    .RuleFor(o => o.CustomerId, f => Guid.NewGuid())
+    .RuleFor(u => u.OrderDate, (f, o) => f.Date.BetweenDateOnly(
+        new DateOnly(2003, 1, 1),
+        new DateOnly(2023, 1, 3)))
     .RuleFor(o => o.Status, (f, u) => false) //for random true or false -> f.IndexFaker == 0 ? true : false)
-    .RuleFor(u => u.PaymentDate, (f, o) => f.Date.BetweenDateOnly(
-                    new DateOnly(2003, 1, 1),
-                    new DateOnly(2023, 1, 3)));
+    .RuleFor(s => s.Items, f => mockOfferingsWithQuantity.Generate(f.Random.Int(2, 7)).ToList())
+    .RuleFor(s => s.TotalPrice, f => f.Random.Float(20, 150));
 
+// // Generate mock users
+// var mockUsers = new Faker<User>()
+//     .RuleFor(u => u.Firstname, (f, u) => f.Name.FirstName())
+//     .RuleFor(u => u.Lastname, (f, u) => f.Name.LastName())
+//     .RuleFor(u => u.Username, (f, u) => u.Firstname + u.Lastname);
 
-
-
-
-
-// Generate mock users
-var mockUsers = new Faker<User>()
-    .RuleFor(u => u.Firstname, (f, u) => f.Name.FirstName())
-    .RuleFor(u => u.Lastname, (f, u) => f.Name.LastName())
-    .RuleFor(u => u.Username, (f, u) => u.Firstname + u.Lastname);
-
+// var mockGeneratedUsers = mockUsers.Generate(AMOUNT_OF_USERS_TO_GENERATE);
 var mockGeneratedShoppingBasket = mockShoppingBasket.Generate(1);
-var mockGeneratedUsers = mockUsers.Generate(AMOUNT_OF_USERS_TO_GENERATE);
-var mockGeneratedOrders = mockOrder.Generate(AMOUNT_OF_USERS_TO_GENERATE);
+var mockGeneratedOrders = mockOrder.Generate(1);
 
 if (KAFKA_DELETE_TOPIC_FIRST)
 {
@@ -77,7 +73,7 @@ if (KAFKA_DELETE_TOPIC_FIRST)
     };
 
     using var adminClient = new AdminClientBuilder(configAdmClient).Build();
-    await adminClient.DeleteTopicsAsync(new string[] { KAFKA_TOPIC }, null);
+    await adminClient.DeleteTopicsAsync(new string[] { KAFKA_TOPIC1, KAFKA_TOPIC2 }, null);
 }
 
 // Produce messages config
@@ -94,7 +90,7 @@ if (createOrderOrShoppingBasket)
     using var producer = new ProducerBuilder<Null, string>(configProducer).Build();
     foreach (var shoppingItem in mockGeneratedShoppingBasket)
     {
-        var result = await producer.ProduceAsync(KAFKA_TOPIC, new Message<Null, string>
+        var result = await producer.ProduceAsync(KAFKA_TOPIC2, new Message<Null, string>
         {
             Value = JsonSerializer.Serialize<ShoppingBasket>(shoppingItem)
         });
@@ -110,7 +106,7 @@ if (!createOrderOrShoppingBasket)
     using var producer1 = new ProducerBuilder<Null, string>(configProducer).Build();
     foreach (var order in mockGeneratedOrders)
     {
-        var result = await producer1.ProduceAsync(KAFKA_TOPIC, new Message<Null, string>
+        var result = await producer1.ProduceAsync(KAFKA_TOPIC1, new Message<Null, string>
         {
             Value = JsonSerializer.Serialize<Order>(order)
         });

@@ -15,9 +15,7 @@ public class Order
     /// </summary>
     //[JsonIgnore]
     public Guid OrderId { get; set; }
-
-
-
+    
     /// <summary>
     /// Durch [JsonIgnore] würde der Value nicht an Kafka gesendet werden
     /// </summary>

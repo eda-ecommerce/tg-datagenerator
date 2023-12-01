@@ -20,8 +20,27 @@ string KAFKA_BROKER = configuration.GetValue<string>("Kafka:Broker")!;
 string KAFKA_TOPIC = configuration.GetValue<string>("Kafka:Topic")!;
 bool KAFKA_DELETE_TOPIC_FIRST = configuration.GetValue<bool>("Kafka:DeleteTopicFirst")!;
 int AMOUNT_OF_USERS_TO_GENERATE = configuration.GetValue<int>("Kafka:AmountOfUsersToGenerate")!;
-bool createPaymentOrShoppingBasket = configuration.GetValue<bool>("CreatePaymentOrShoppingBasket")!;
+bool createOrderOrShoppingBasket = configuration.GetValue<bool>("CreateOrderOrShoppingBasket")!;
 
+
+// Generate mock Offerings
+var mockOfferings = new Faker<Offering>()
+    .RuleFor(o => o.OfferingId, f => Guid.NewGuid())
+    .RuleFor(o => o.ProductId, f => Guid.NewGuid())
+    .RuleFor(o => o.Quantity, f => f.Random.Number(1, 10))
+    .RuleFor(o => o.Price, f => f.Random.Float(20, 100))
+    .RuleFor(o => o.Status, f => false);
+    
+// Generate OfferingWithQuantity
+var mockOfferingsWithQuantity = new Faker<OfferingWithQuantity>()
+    .RuleFor(ow => ow.Quantity, f => f.Random.Int(1, 10))
+    .RuleFor(ow => ow.Offering, f => mockOfferings);
+
+// Generate mock shopping basket
+var mockShoppingBasket = new Faker<ShoppingBasket>()
+    .RuleFor(s => s.ShoppingBasketId, f => Guid.NewGuid())
+    .RuleFor(s => s.CustomerId, f => Guid.NewGuid())
+    .RuleFor(s => s.items, f => mockOfferingsWithQuantity.Generate(f.Random.Int(2,7)).ToList());
 
 // Generate mock order
 var mockOrder = new Faker<Order>()
@@ -35,12 +54,17 @@ var mockOrder = new Faker<Order>()
                     new DateOnly(2023, 1, 3)));
 
 
+
+
+
+
 // Generate mock users
 var mockUsers = new Faker<User>()
     .RuleFor(u => u.Firstname, (f, u) => f.Name.FirstName())
     .RuleFor(u => u.Lastname, (f, u) => f.Name.LastName())
     .RuleFor(u => u.Username, (f, u) => u.Firstname + u.Lastname);
 
+var mockGeneratedShoppingBasket = mockShoppingBasket.Generate(1);
 var mockGeneratedUsers = mockUsers.Generate(AMOUNT_OF_USERS_TO_GENERATE);
 var mockGeneratedOrders = mockOrder.Generate(AMOUNT_OF_USERS_TO_GENERATE);
 
@@ -65,23 +89,23 @@ ProducerConfig configProducer = new ProducerConfig
 
 // Produce user
 // to create an shoppingbasket => appsatings -> createPaymentOrShoppingBasket = true
-if (createPaymentOrShoppingBasket)
+if (createOrderOrShoppingBasket)
 {
     using var producer = new ProducerBuilder<Null, string>(configProducer).Build();
-    foreach (var user in mockGeneratedUsers)
+    foreach (var shoppingItem in mockGeneratedShoppingBasket)
     {
         var result = await producer.ProduceAsync(KAFKA_TOPIC, new Message<Null, string>
         {
-            Value = JsonSerializer.Serialize<User>(user)
+            Value = JsonSerializer.Serialize<ShoppingBasket>(shoppingItem)
         });
-        Console.WriteLine(JsonSerializer.Serialize<User>(user));
+        Console.WriteLine(JsonSerializer.Serialize<ShoppingBasket>(shoppingItem));
 
     }
 }
 
 // Produce Order
 // to create an order => appsatings -> createPaymentOrShoppingBasket = false
-if (!createPaymentOrShoppingBasket)
+if (!createOrderOrShoppingBasket)
 {
     using var producer1 = new ProducerBuilder<Null, string>(configProducer).Build();
     foreach (var order in mockGeneratedOrders)

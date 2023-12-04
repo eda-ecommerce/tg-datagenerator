@@ -14,4 +14,5 @@ public class Order
     public bool Status { get; set; }
     public List<OfferingWithQuantity> Items { get; set; }
     public float TotalPrice {  get; set; }
+    public string Type { get; set; }
 }

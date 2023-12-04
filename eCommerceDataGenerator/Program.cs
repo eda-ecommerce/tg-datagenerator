@@ -41,7 +41,8 @@ var mockOfferingsWithQuantity = new Faker<OfferingWithQuantity>()
 var mockShoppingBasket = new Faker<ShoppingBasket>()
     .RuleFor(s => s.ShoppingBasketId, f => Guid.NewGuid())
     .RuleFor(s => s.CustomerId, f => Guid.NewGuid())
-    .RuleFor(s => s.Items, f => mockOfferingsWithQuantity.Generate(f.Random.Int(2,7)).ToList());
+    .RuleFor(s => s.Items, f => mockOfferingsWithQuantity.Generate(f.Random.Int(2,7)).ToList())
+    .RuleFor(s=> s.Type, f => "created");;
 
 // Generate mock order
 var mockOrder = new Faker<Order>()
@@ -51,8 +52,9 @@ var mockOrder = new Faker<Order>()
         new DateOnly(2003, 1, 1),
         new DateOnly(2023, 1, 3)))
     .RuleFor(o => o.Status, (f, u) => false) //for random true or false -> f.IndexFaker == 0 ? true : false)
-    .RuleFor(s => s.Items, f => mockOfferingsWithQuantity.Generate(f.Random.Int(2, 7)).ToList())
-    .RuleFor(s => s.TotalPrice, f => f.Random.Float(20, 150));
+    .RuleFor(o => o.Items, f => mockOfferingsWithQuantity.Generate(f.Random.Int(2, 7)).ToList())
+    .RuleFor(o => o.TotalPrice, f => f.Random.Float(20, 150))
+    .RuleFor(o=> o.Type, f => "created");
 
 // // Generate mock users
 // var mockUsers = new Faker<User>()

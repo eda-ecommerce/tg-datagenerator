@@ -41,8 +41,7 @@ var mockOfferingsWithQuantity = new Faker<OfferingWithQuantity>()
 var mockShoppingBasket = new Faker<ShoppingBasket>()
     .RuleFor(s => s.ShoppingBasketId, f => Guid.NewGuid())
     .RuleFor(s => s.CustomerId, f => Guid.NewGuid())
-    .RuleFor(s => s.Items, f => mockOfferingsWithQuantity.Generate(f.Random.Int(2,7)).ToList())
-    .RuleFor(s=> s.Type, f => "created");;
+    .RuleFor(s => s.Items, f => mockOfferingsWithQuantity.Generate(f.Random.Int(2,7)).ToList());
 
 // Generate mock order
 var mockOrder = new Faker<Order>()
@@ -53,8 +52,19 @@ var mockOrder = new Faker<Order>()
         new DateOnly(2023, 1, 3)))
     .RuleFor(o => o.Status, (f, u) => false) //for random true or false -> f.IndexFaker == 0 ? true : false)
     .RuleFor(o => o.Items, f => mockOfferingsWithQuantity.Generate(f.Random.Int(2, 7)).ToList())
-    .RuleFor(o => o.TotalPrice, f => f.Random.Float(20, 150))
-    .RuleFor(o=> o.Type, f => "created");
+    .RuleFor(o => o.TotalPrice, f => f.Random.Float(20, 150));
+
+var mockKafkaSchemaOrder = new Faker<KafkaSchemaOrder>()
+    .RuleFor(kfo => kfo.Source, "Order-Service")
+    .RuleFor(kfo => kfo.Timestamp, new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds())
+    .RuleFor(kfo => kfo.Type, "created")
+    .RuleFor(kfo => kfo.Order, mockOrder);
+
+var mockKafkaSchemaShoppingBasket = new Faker<KafkaSchemaShoppingBasket>()
+    .RuleFor(kssb => kssb.Source, "ShoppingBasket-Service")
+    .RuleFor(kssb => kssb.Timestamp, new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds())
+    .RuleFor(kssb => kssb.Type, "created")
+    .RuleFor(kssb => kssb.ShoppingBasket, mockShoppingBasket);
 
 // // Generate mock users
 // var mockUsers = new Faker<User>()
@@ -63,8 +73,8 @@ var mockOrder = new Faker<Order>()
 //     .RuleFor(u => u.Username, (f, u) => u.Firstname + u.Lastname);
 
 // var mockGeneratedUsers = mockUsers.Generate(AMOUNT_OF_USERS_TO_GENERATE);
-var mockGeneratedShoppingBasket = mockShoppingBasket.Generate(1);
-var mockGeneratedOrders = mockOrder.Generate(1);
+var mockGeneratedShoppingBasket = mockKafkaSchemaShoppingBasket.Generate(1);
+var mockGeneratedOrders = mockKafkaSchemaOrder.Generate(1);
 
 if (KAFKA_DELETE_TOPIC_FIRST)
 {
@@ -94,9 +104,9 @@ if (createOrderOrShoppingBasket)
     {
         var result = await producer.ProduceAsync(KAFKA_TOPIC2, new Message<Null, string>
         {
-            Value = JsonSerializer.Serialize<ShoppingBasket>(shoppingItem)
+            Value = JsonSerializer.Serialize<KafkaSchemaShoppingBasket>(shoppingItem)
         });
-        Console.WriteLine(JsonSerializer.Serialize<ShoppingBasket>(shoppingItem));
+        Console.WriteLine(JsonSerializer.Serialize<KafkaSchemaShoppingBasket>(shoppingItem));
 
     }
 }
@@ -110,9 +120,9 @@ if (!createOrderOrShoppingBasket)
     {
         var result = await producer1.ProduceAsync(KAFKA_TOPIC1, new Message<Null, string>
         {
-            Value = JsonSerializer.Serialize<Order>(order)
+            Value = JsonSerializer.Serialize<KafkaSchemaOrder>(order)
         });
-        Console.WriteLine(JsonSerializer.Serialize<Order>(order));
+        Console.WriteLine(JsonSerializer.Serialize<KafkaSchemaOrder>(order));
 
     }
 }

@@ -12,7 +12,7 @@ public class Order
     public Guid CustomerId { get; set; }
     public DateOnly OrderDate { get; set; }
     public bool Status { get; set; }
-    public List<OfferingWithQuantity> Items { get; set; }
     public float TotalPrice {  get; set; }
-    public string Type { get; set; }
+    public List<OfferingWithQuantity> Items { get; set; }
+    
 }

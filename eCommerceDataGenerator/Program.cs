@@ -57,13 +57,13 @@ var mockOrder = new Faker<Order>()
 var mockKafkaSchemaOrder = new Faker<KafkaSchemaOrder>()
     .RuleFor(kfo => kfo.Source, "Order-Service")
     .RuleFor(kfo => kfo.Timestamp, new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds())
-    .RuleFor(kfo => kfo.Type, "created")
+    .RuleFor(kfo => kfo.Operation, "created")
     .RuleFor(kfo => kfo.Order, mockOrder);
 
 var mockKafkaSchemaShoppingBasket = new Faker<KafkaSchemaShoppingBasket>()
     .RuleFor(kssb => kssb.Source, "ShoppingBasket-Service")
     .RuleFor(kssb => kssb.Timestamp, new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds())
-    .RuleFor(kssb => kssb.Type, "created")
+    .RuleFor(kssb => kssb.Operation, "created")
     .RuleFor(kssb => kssb.ShoppingBasket, mockShoppingBasket);
 
 // // Generate mock users

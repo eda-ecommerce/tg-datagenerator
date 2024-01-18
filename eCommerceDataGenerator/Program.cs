@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -54,11 +55,6 @@ var mockOrder = new Faker<Order>()
     .RuleFor(o => o.Items, f => mockOfferingsWithQuantity.Generate(f.Random.Int(2, 7)).ToList())
     .RuleFor(o => o.TotalPrice, f => f.Random.Float(20, 150));
 
-var mockKafkaSchemaOrder = new Faker<KafkaSchemaOrder>()
-    .RuleFor(kfo => kfo.Source, "Order-Service")
-    .RuleFor(kfo => kfo.Timestamp, new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds())
-    .RuleFor(kfo => kfo.Operation, "created")
-    .RuleFor(kfo => kfo.Order, mockOrder);
 
 var mockKafkaSchemaShoppingBasket = new Faker<KafkaSchemaShoppingBasket>()
     .RuleFor(kssb => kssb.Source, "ShoppingBasket-Service")
@@ -74,7 +70,7 @@ var mockKafkaSchemaShoppingBasket = new Faker<KafkaSchemaShoppingBasket>()
 
 // var mockGeneratedUsers = mockUsers.Generate(AMOUNT_OF_USERS_TO_GENERATE);
 var mockGeneratedShoppingBasket = mockKafkaSchemaShoppingBasket.Generate(1);
-var mockGeneratedOrders = mockKafkaSchemaOrder.Generate(1);
+var mockGeneratedOrders = mockOrder.Generate(1);
 
 if (KAFKA_DELETE_TOPIC_FIRST)
 {
@@ -94,6 +90,12 @@ ProducerConfig configProducer = new ProducerConfig
     BootstrapServers = KAFKA_BROKER,
     ClientId = Dns.GetHostName()
 };
+
+// Create Kafka Header
+var orderHeader = new Headers();
+orderHeader.Add("Source", Encoding.UTF8.GetBytes("order"));
+orderHeader.Add("Timestamp", Encoding.UTF8.GetBytes(new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString()));
+orderHeader.Add("Operation", Encoding.UTF8.GetBytes("created"));
 
 // Produce user
 // to create an shoppingbasket => appsatings -> createPaymentOrShoppingBasket = true
@@ -120,9 +122,10 @@ if (!createOrderOrShoppingBasket)
     {
         var result = await producer1.ProduceAsync(KAFKA_TOPIC1, new Message<Null, string>
         {
-            Value = JsonSerializer.Serialize<KafkaSchemaOrder>(order)
+            Value = JsonSerializer.Serialize<Order>(order),
+            Headers = orderHeader
         });
-        Console.WriteLine(JsonSerializer.Serialize<KafkaSchemaOrder>(order));
+        Console.WriteLine(JsonSerializer.Serialize<Order>(order));
 
     }
 }

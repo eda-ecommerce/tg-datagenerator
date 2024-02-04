@@ -26,23 +26,26 @@ bool createOrderOrShoppingBasket = configuration.GetValue<bool>("CreateOrderOrSh
 
 
 // Generate mock Offerings
-var mockOfferings = new Faker<Offering>()
-    .RuleFor(o => o.OfferingId, f => Guid.NewGuid())
-    .RuleFor(o => o.ProductId, f => Guid.NewGuid())
-    .RuleFor(o => o.Quantity, f => f.Random.Number(1, 10))
-    .RuleFor(o => o.Price, f => f.Random.Float(20, 100))
-    .RuleFor(o => o.Status, f => false);
+// var mockOfferings = new Faker<Offering>()
+//     .RuleFor(o => o.OfferingId, f => Guid.NewGuid())
+//     .RuleFor(o => o.ProductId, f => Guid.NewGuid())
+//     .RuleFor(o => o.Quantity, f => f.Random.Number(1, 10))
+//     .RuleFor(o => o.Price, f => f.Random.Float(20, 100))
+//     .RuleFor(o => o.Status, f => false);
     
 // Generate OfferingWithQuantity
 var mockOfferingsWithQuantity = new Faker<OfferingWithQuantity>()
     .RuleFor(ow => ow.Quantity, f => f.Random.Int(1, 10))
-    .RuleFor(ow => ow.Offering, f => mockOfferings);
+    .RuleFor(ow => ow.OfferingId, f => Guid.NewGuid())
+    .RuleFor(o => o.TotalPrice, f => f.Random.Float(1, 20));
 
 // Generate mock shopping basket
 var mockShoppingBasket = new Faker<ShoppingBasket>()
     .RuleFor(s => s.ShoppingBasketId, f => Guid.NewGuid())
     .RuleFor(s => s.CustomerId, f => Guid.NewGuid())
-    .RuleFor(s => s.Items, f => mockOfferingsWithQuantity.Generate(f.Random.Int(2,7)).ToList());
+    .RuleFor(s => s.Items, f => mockOfferingsWithQuantity.Generate(f.Random.Int(2, 7)).ToList())
+    .RuleFor(ow => ow.TotalItemQuantity, f => f.Random.Int(1, 10))
+    .RuleFor(o => o.TotalPrice, f => f.Random.Float(20, 150));
 
 // Generate mock order
 var mockOrder = new Faker<Order>()
@@ -57,9 +60,6 @@ var mockOrder = new Faker<Order>()
 
 
 var mockKafkaSchemaShoppingBasket = new Faker<KafkaSchemaShoppingBasket>()
-    .RuleFor(kssb => kssb.Source, "ShoppingBasket-Service")
-    .RuleFor(kssb => kssb.Timestamp, new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds())
-    .RuleFor(kssb => kssb.Operation, "created")
     .RuleFor(kssb => kssb.ShoppingBasket, mockShoppingBasket);
 
 // // Generate mock users
@@ -93,9 +93,14 @@ ProducerConfig configProducer = new ProducerConfig
 
 // Create Kafka Header
 var orderHeader = new Headers();
-orderHeader.Add("Source", Encoding.UTF8.GetBytes("order"));
-orderHeader.Add("Timestamp", Encoding.UTF8.GetBytes(new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString()));
-orderHeader.Add("Operation", Encoding.UTF8.GetBytes("created"));
+orderHeader.Add("source", Encoding.UTF8.GetBytes("order"));
+orderHeader.Add("timestamp", Encoding.UTF8.GetBytes(new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString()));
+orderHeader.Add("operation", Encoding.UTF8.GetBytes("created"));
+
+var shoppingBasketHeader = new Headers();
+shoppingBasketHeader.Add("source", Encoding.UTF8.GetBytes("shoppingBasket"));
+shoppingBasketHeader.Add("timestamp", Encoding.UTF8.GetBytes(new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString()));
+shoppingBasketHeader.Add("operation", Encoding.UTF8.GetBytes("created"));
 
 // Produce user
 // to create an shoppingbasket => appsatings -> createPaymentOrShoppingBasket = true
@@ -106,7 +111,8 @@ if (createOrderOrShoppingBasket)
     {
         var result = await producer.ProduceAsync(KAFKA_TOPIC2, new Message<Null, string>
         {
-            Value = JsonSerializer.Serialize<KafkaSchemaShoppingBasket>(shoppingItem)
+            Value = JsonSerializer.Serialize<KafkaSchemaShoppingBasket>(shoppingItem),
+            Headers = shoppingBasketHeader
         });
         Console.WriteLine(JsonSerializer.Serialize<KafkaSchemaShoppingBasket>(shoppingItem));
 

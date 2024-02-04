@@ -23,15 +23,6 @@ string KAFKA_TOPIC2 = configuration.GetValue<string>("Kafka:Topic2")!;
 bool KAFKA_DELETE_TOPIC_FIRST = configuration.GetValue<bool>("Kafka:DeleteTopicFirst")!;
 int AMOUNT_OF_USERS_TO_GENERATE = configuration.GetValue<int>("Kafka:AmountOfUsersToGenerate")!;
 bool createOrderOrShoppingBasket = configuration.GetValue<bool>("CreateOrderOrShoppingBasket")!;
-
-
-// Generate mock Offerings
-// var mockOfferings = new Faker<Offering>()
-//     .RuleFor(o => o.OfferingId, f => Guid.NewGuid())
-//     .RuleFor(o => o.ProductId, f => Guid.NewGuid())
-//     .RuleFor(o => o.Quantity, f => f.Random.Number(1, 10))
-//     .RuleFor(o => o.Price, f => f.Random.Float(20, 100))
-//     .RuleFor(o => o.Status, f => false);
     
 // Generate OfferingWithQuantity
 var mockOfferingsWithQuantity = new Faker<OfferingWithQuantity>()

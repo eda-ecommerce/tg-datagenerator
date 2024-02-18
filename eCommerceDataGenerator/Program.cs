@@ -23,20 +23,22 @@ string KAFKA_TOPIC2 = configuration.GetValue<string>("Kafka:Topic2")!;
 bool KAFKA_DELETE_TOPIC_FIRST = configuration.GetValue<bool>("Kafka:DeleteTopicFirst")!;
 int AMOUNT_OF_USERS_TO_GENERATE = configuration.GetValue<int>("Kafka:AmountOfUsersToGenerate")!;
 bool createOrderOrShoppingBasket = configuration.GetValue<bool>("CreateOrderOrShoppingBasket")!;
-    
+Guid shoppingBasketId = Guid.NewGuid();
 // Generate OfferingWithQuantity
 var mockOfferingsWithQuantity = new Faker<OfferingWithQuantity>()
-    .RuleFor(ow => ow.Quantity, f => f.Random.Int(1, 10))
-    .RuleFor(ow => ow.OfferingId, f => Guid.NewGuid())
-    .RuleFor(o => o.TotalPrice, f => f.Random.Float(1, 20));
+    .RuleFor(ow => ow.shoppingBasketId, f => shoppingBasketId)
+    .RuleFor(ow => ow.quantity, f => f.Random.Int(1, 10))
+    .RuleFor(ow => ow.offeringId, f => Guid.NewGuid())
+    .RuleFor(o => o.totalPrice, f => f.Random.Float(1, 20))
+    .RuleFor(o => o.itemState, f => "active");
 
 // Generate mock shopping basket
 var mockShoppingBasket = new Faker<ShoppingBasket>()
-    .RuleFor(s => s.ShoppingBasketId, f => Guid.NewGuid())
-    .RuleFor(s => s.CustomerId, f => Guid.NewGuid())
-    .RuleFor(s => s.Items, f => mockOfferingsWithQuantity.Generate(f.Random.Int(2, 7)).ToList())
-    .RuleFor(ow => ow.TotalItemQuantity, f => f.Random.Int(1, 10))
-    .RuleFor(o => o.TotalPrice, f => f.Random.Float(20, 150));
+    .RuleFor(s => s.shoppingBasketId, f => shoppingBasketId)
+    .RuleFor(s => s.customerId, f => Guid.NewGuid())
+    .RuleFor(s => s.shoppingBasketItems, f => mockOfferingsWithQuantity.Generate(f.Random.Int(2, 7)).ToList())
+    .RuleFor(ow => ow.totalItemQuantity, f => f.Random.Int(1, 10))
+    .RuleFor(o => o.totalPrice, f => f.Random.Float(20, 150));
 
 // Generate mock order
 var mockOrder = new Faker<Order>()
@@ -45,7 +47,7 @@ var mockOrder = new Faker<Order>()
     .RuleFor(u => u.OrderDate, (f, o) => f.Date.BetweenDateOnly(
         new DateOnly(2003, 1, 1),
         new DateOnly(2023, 1, 3)))
-    .RuleFor(o => o.Status, (f, u) => false) //for random true or false -> f.IndexFaker == 0 ? true : false)
+    .RuleFor(o => o.Status, f => false) //for random true or false -> f.IndexFaker == 0 ? true : false)
     .RuleFor(o => o.Items, f => mockOfferingsWithQuantity.Generate(f.Random.Int(2, 7)).ToList())
     .RuleFor(o => o.TotalPrice, f => f.Random.Float(20, 150));
 

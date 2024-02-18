@@ -2,11 +2,11 @@ namespace eCommerceDataGenerator.Models;
 
 public class ShoppingBasket
 {
-    public Guid ShoppingBasketId { get; set; }
-    public Guid CustomerId { get; set; }
+    public Guid shoppingBasketId { get; set; }
+    public Guid customerId { get; set; }
     
-    public float TotalPrice { get; set; }
+    public float totalPrice { get; set; }
     
-    public int TotalItemQuantity { get; set; }
-    public List<OfferingWithQuantity> Items { get; set; }
+    public int totalItemQuantity { get; set; }
+    public List<OfferingWithQuantity> shoppingBasketItems { get; set; }
 }

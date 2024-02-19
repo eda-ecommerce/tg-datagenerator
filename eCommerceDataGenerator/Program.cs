@@ -104,7 +104,7 @@ if (createOrderOrShoppingBasket)
     {
         var result = await producer.ProduceAsync(KAFKA_TOPIC2, new Message<Null, string>
         {
-            Value = JsonSerializer.Serialize<KafkaSchemaShoppingBasket>(shoppingItem),
+            Value = JsonSerializer.Serialize<ShoppingBasket>(shoppingItem.ShoppingBasket),
             Headers = shoppingBasketHeader
         });
         Console.WriteLine(JsonSerializer.Serialize<KafkaSchemaShoppingBasket>(shoppingItem));

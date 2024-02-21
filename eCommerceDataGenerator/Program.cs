@@ -26,6 +26,7 @@ bool createOrderOrShoppingBasket = configuration.GetValue<bool>("CreateOrderOrSh
 Guid shoppingBasketId = Guid.NewGuid();
 // Generate OfferingWithQuantity
 var mockOfferingsWithQuantity = new Faker<OfferingWithQuantity>()
+    .RuleFor(ow => ow.shoppingBasketItemId, f => Guid.NewGuid())
     .RuleFor(ow => ow.shoppingBasketId, f => shoppingBasketId)
     .RuleFor(ow => ow.quantity, f => f.Random.Int(1, 10))
     .RuleFor(ow => ow.offeringId, f => Guid.NewGuid())

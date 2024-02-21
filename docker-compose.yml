@@ -1,0 +1,90 @@
+version: "3.8"
+
+services: 
+  shared-zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.1
+    hostname: shared-zookeeper
+    container_name: shared-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
+
+  shared-kafka:
+    image: confluentinc/cp-kafka:7.4.1
+    hostname: shared-kafka
+    container_name: shared-kafka
+    depends_on:
+      - shared-zookeeper
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: shared-zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://shared-kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+
+  sql:
+    image: "mcr.microsoft.com/mssql/server:2022-latest"
+    container_name: sql_server2022
+    ports: # not actually needed, because the two services are on the same network
+      - "1433:1433" 
+    environment:
+      - ACCEPT_EULA=y
+      - SA_PASSWORD=yourStrong(!)Password
+
+  payment-worker:
+    image: ghcr.io/eda-ecommerce/payment-worker:latest
+    container_name: payment-worker
+    depends_on: 
+      - sql
+    ## no ports needed internal only.
+    environment: 
+      - DBSTRING=Data Source=sql_server2022;Initial Catalog=payment;Persist Security Info=True;User ID=SA;Password=yourStrong(!)Password;TrustServerCertificate=True
+      - KAFKABROKER=shared-kafka:9092
+      - KAFKATOPIC1=order
+      - KAFKATOPIC2=payment
+
+  payment-webapi:
+    image: ghcr.io/eda-ecommerce/payment-webapi:latest
+    container_name: payment-webapi
+    depends_on: 
+      - sql
+      - payment-worker
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment: 
+      - DBSTRING=Data Source=sql_server2022;Initial Catalog=payment;Persist Security Info=True;User ID=SA;Password=yourStrong(!)Password;TrustServerCertificate=True
+      - KAFKABROKER=shared-kafka:9092
+      - KAFKATOPIC=payment
+
+  order-worker:
+    image: ghcr.io/eda-ecommerce/order-worker:latest
+    container_name: order-worker
+    depends_on: 
+      - sql
+    ## no ports needed internal only.
+    environment: 
+      - DBSTRING=Data Source=sql_server2022;Initial Catalog=order;Persist Security Info=True;User ID=SA;Password=yourStrong(!)Password;TrustServerCertificate=True
+      - KAFKABROKER=shared-kafka:9092
+
+  order-webapi:
+    image: ghcr.io/eda-ecommerce/order-webapi:latest
+    container_name: order-webapi
+    depends_on: 
+      - sql
+      - order-worker
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment: 
+      - DBSTRING=Data Source=sql_server2022;Initial Catalog=order;Persist Security Info=True;User ID=SA;Password=yourStrong(!)Password;TrustServerCertificate=True
+      - KAFKABROKER=shared-kafka:9092
+    
+
+  

@@ -31,7 +31,7 @@ var mockOfferingsWithQuantity = new Faker<OfferingWithQuantity>()
     .RuleFor(ow => ow.quantity, f => f.Random.Int(1, 10))
     .RuleFor(ow => ow.offeringId, f => Guid.NewGuid())
     .RuleFor(o => o.totalPrice, f => f.Random.Float(1, 20))
-    .RuleFor(o => o.itemState, f => "active");
+    .RuleFor(o => o.itemState, f => "AVAILABLE");
 
 // Generate mock shopping basket
 var mockShoppingBasket = new Faker<ShoppingBasket>()
@@ -92,9 +92,9 @@ orderHeader.Add("timestamp", Encoding.UTF8.GetBytes(new DateTimeOffset(DateTime.
 orderHeader.Add("operation", Encoding.UTF8.GetBytes("created"));
 
 var shoppingBasketHeader = new Headers();
-shoppingBasketHeader.Add("source", Encoding.UTF8.GetBytes("shoppingBasket"));
+shoppingBasketHeader.Add("source", Encoding.UTF8.GetBytes("shopping-basket-service"));
 shoppingBasketHeader.Add("timestamp", Encoding.UTF8.GetBytes(new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString()));
-shoppingBasketHeader.Add("operation", Encoding.UTF8.GetBytes("created"));
+shoppingBasketHeader.Add("operation", Encoding.UTF8.GetBytes("CHECKOUT"));
 
 // Produce user
 // to create an shoppingbasket => appsatings -> createPaymentOrShoppingBasket = true
